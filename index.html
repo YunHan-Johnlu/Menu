@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>埤塘生態古書誌</title>
-    <!-- 引入 Tailwind CSS 確保響應式佈局 -->
+    <!-- 引入 Tailwind CSS 確保排版與按鈕樣式 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -17,83 +17,124 @@
             overflow: hidden; 
             user-select: none;
         }
-        
-        /* 幻燈片容器 */
-        .slider { 
-            display: flex; 
-            width: 400vw; 
-            height: 100vh; 
-            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1); 
-        }
-        
-        .slide { 
-            width: 100vw; 
-            height: 100vh; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            padding: 20px; 
-        }
-        
-        /* 古書頁面精緻化樣式 */
-        .page { 
-            width: 95%; 
-            max-width: 520px; 
-            height: 82vh; 
-            background: #fbf8f2; 
-            border: 2px solid #a69e8b;
-            padding: 35px 40px;
-            box-shadow: 15px 15px 45px rgba(44, 36, 22, 0.25), inset 0 0 80px rgba(180, 160, 120, 0.15);
-            position: relative;
-            display: flex; 
-            flex-direction: column; 
+
+        /* 3D 舞台容器 */
+        .book-viewport {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
             align-items: center;
-            justify-content: space-between;
-            border-radius: 4px;
+            perspective: 2000px; /* 提供 3D 透視深度 */
+            overflow: hidden;
         }
-        
-        /* 古書雙邊框裝飾 */
-        .page::before { 
+
+        /* 整本書籍容器 */
+        .book {
+            position: relative;
+            width: 420px; /* 單頁寬度 */
+            height: 580px; /* 頁面高度 */
+            transition: transform 1s cubic-bezier(0.2, 0.8, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        /* 每一張紙 (包含正反兩面) */
+        .paper {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            transform-origin: left center; /* 以左側（書脊）為旋轉軸 */
+            transform-style: preserve-3d;
+            transition: transform 1s cubic-bezier(0.2, 0.8, 0.2, 1), z-index 1s;
+            pointer-events: none; /* 預防阻擋下層點擊 */
+        }
+
+        /* 激活狀態下允許滑鼠互動 */
+        .paper.active-clickable {
+            pointer-events: auto;
+        }
+
+        /* 書頁的正、反面基礎樣式 */
+        .front, .back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background: #fbf8f2;
+            border: 1px solid #a69e8b;
+            padding: 30px 35px;
+            box-shadow: inset 0 0 40px rgba(180, 160, 120, 0.15);
+            backface-visibility: hidden; /* 翻轉過去時隱藏背面 */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* 背面需要水平翻轉 */
+        .back {
+            transform: rotateY(180deg);
+        }
+
+        /* 古書框線裝飾 */
+        .front::before, .back::before { 
             content: ""; 
             position: absolute; 
-            top: 12px; 
-            left: 12px; 
-            right: 12px; 
-            bottom: 12px; 
+            top: 10px; 
+            left: 10px; 
+            right: 10px; 
+            bottom: 10px; 
             border: 1px solid #c2b9a7; 
             pointer-events: none; 
         }
-        
-        .page::after {
+        .front::after, .back::after {
             content: "";
             position: absolute;
-            top: 16px;
-            left: 16px;
-            right: 16px;
-            bottom: 16px;
+            top: 14px;
+            left: 14px;
+            right: 14px;
+            bottom: 14px;
             border: 1px double #d6ceb8;
             pointer-events: none;
-            opacity: 0.7;
+            opacity: 0.6;
         }
-        
-        /* 古書線裝書脊模擬線（位於左側，呈現翻頁書卷感） */
-        .book-spine {
+
+        /* 書脊中縫陰影：模擬打開時的立體凹陷 */
+        .spine-shadow-left {
             position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 15px;
-            background: linear-gradient(to right, rgba(0,0,0,0.15), rgba(0,0,0,0));
-            border-right: 1px solid rgba(0,0,0,0.05);
+            right: 0; top: 0; bottom: 0; width: 15px;
+            background: linear-gradient(to left, rgba(0,0,0,0.12), rgba(0,0,0,0));
             pointer-events: none;
+            z-index: 10;
         }
-        
-        /* 圖片容器：優化長寬比與古風外框 */
+        .spine-shadow-right {
+            position: absolute;
+            left: 0; top: 0; bottom: 0; width: 15px;
+            background: linear-gradient(to right, rgba(0,0,0,0.12), rgba(0,0,0,0));
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* 翻書頁面翻過去後的陰影 */
+        .paper .front, .paper .back {
+            transition: filter 1s ease;
+        }
+        .paper.flipped .front {
+            filter: brightness(0.9);
+        }
+        .paper:not(.flipped) .back {
+            filter: brightness(0.9);
+        }
+
+        /* 圖片容器 */
         .img-box { 
             width: 100%; 
-            height: 48%;
+            height: 44%;
             border: 1px solid #b3a692; 
-            margin: 15px 0; 
+            margin: 10px 0; 
             background: #ece8e0; 
             display: flex; 
             align-items: center; 
@@ -102,36 +143,30 @@
             box-shadow: inset 0 0 15px rgba(0,0,0,0.05);
             position: relative;
         }
-
         .img-box img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.5s ease;
-        }
-
-        .img-box:hover img {
-            transform: scale(1.03);
         }
         
         .title { 
-            font-size: 2rem; 
+            font-size: 1.8rem; 
             font-weight: 700;
             border-bottom: 2px double #8e836d; 
-            padding-bottom: 6px; 
+            padding-bottom: 4px; 
             color: #3e321c;
             letter-spacing: 0.1em;
             text-align: center;
         }
 
-        /* 頁面切換控制鈕 */
+        /* 翻頁控制按鈕 */
         .nav-btn {
             position: absolute;
             top: 50%;
             transform: translateY(-50%);
-            width: 48px;
-            height: 48px;
-            background: rgba(220, 215, 201, 0.85);
+            width: 52px;
+            height: 52px;
+            background: rgba(220, 215, 201, 0.9);
             border: 1px solid #a69e8b;
             border-radius: 50%;
             display: flex;
@@ -140,170 +175,320 @@
             color: #4a3e2e;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            z-index: 50;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+            z-index: 100;
         }
         .nav-btn:hover {
             background: #4a3e2e;
             color: #fdfaf6;
             border-color: #4a3e2e;
+            transform: translateY(-50%) scale(1.05);
         }
 
-        /* 頁碼指示點 */
-        .dot {
-            width: 10px;
-            height: 10px;
+        /* 封面與封底特殊設計 */
+        .cover-bg {
+            background: #5c2c16 !important; /* 典雅深色封面 */
+            border-color: #ffd700 !important;
+            box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.4) !important;
+        }
+        .cover-bg::before { border-color: #d4af37 !important; }
+        .cover-bg::after { border-color: #b89728 !important; }
+
+        /* 線裝書裝飾線 */
+        .binding-line {
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #d4af37;
+            opacity: 0.6;
+        }
+        .binding-knot {
+            position: absolute;
+            left: 15px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
-            background: #b8b1a0;
-            margin: 0 6px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .dot.active {
-            background: #4a3e2e;
-            transform: scale(1.3);
-        }
-
-        /* 手機直向優化調整 */
-        @media (max-height: 680px) {
-            .page {
-                height: 88vh;
-                padding: 20px 25px;
-            }
-            .title {
-                font-size: 1.6rem;
-            }
-            .img-box {
-                height: 42%;
-                margin: 10px 0;
-            }
-            p {
-                font-size: 0.95rem !important;
-                line-height: 1.6 !important;
-            }
+            background: #b89728;
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
         }
     </style>
 </head>
 <body>
 
-<!-- 書脊與裝飾背景層 -->
-<div class="fixed inset-0 pointer-events-none border-[12px] border-[#c2bdac] opacity-30 z-10"></div>
+<!-- 裝飾外邊框 -->
+<div class="fixed inset-0 pointer-events-none border-[12px] border-[#c2bdac] opacity-30 z-50"></div>
 
 <!-- 左右切換按鈕 -->
-<button class="nav-btn left-4 md:left-10" id="prevBtn" aria-label="上一頁">
+<button class="nav-btn left-6 md:left-12" id="prevBtn" aria-label="上一頁">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
     </svg>
 </button>
-<button class="nav-btn right-4 md:right-10" id="nextBtn" aria-label="下一頁">
+<button class="nav-btn right-6 md:right-12" id="nextBtn" aria-label="下一頁">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
     </svg>
 </button>
 
-<!-- 幻燈片主容器 -->
-<div class="slider" id="slider">
-    <!-- 頁面 1 -->
-    <div class="slide">
-        <div class="page">
-            <div class="book-spine"></div>
-            <div class="text-xs text-[#8e836d] tracking-widest uppercase mb-1">卷一・田園幻夢</div>
-            <h1 class="title">田園幻夢</h1>
-            <div class="img-box">
-                <img src="1.png" alt="" onerror="handleImageError(this, '田園幻夢')">
+<!-- 3D 翻書展示區 -->
+<div class="book-viewport">
+    <div class="book" id="book">
+        
+        <!-- 第一張紙：封面 & 序言 -->
+        <div class="paper active-clickable" id="p1" style="z-index: 4;">
+            <!-- 封面 (正面) -->
+            <div class="front cover-bg text-[#fdfaf6]">
+                <div class="binding-line"></div>
+                <!-- 線裝結點模擬 -->
+                <div class="binding-knot" style="top: 50px;"></div>
+                <div class="binding-knot" style="bottom: 50px;"></div>
+                
+                <div class="flex flex-col items-center justify-center h-full py-10 z-10">
+                    <div class="border border-[#d4af37] p-6 text-center bg-[#5c2c16] shadow-xl">
+                        <span class="text-xs tracking-[0.4em] text-[#d4af37] block mb-3">生態保育特輯</span>
+                        <h1 class="text-4xl font-bold tracking-[0.2em] leading-relaxed text-[#f7e4bd] py-2 border-y border-[#d4af37]">
+                            埤塘生態<br>古書誌
+                        </h1>
+                        <p class="text-xs text-[#d4af37] mt-4 tracking-widest">歲在丙申・初夏重編</p>
+                    </div>
+                </div>
+                <div class="text-xs text-[#d4af37] tracking-widest z-10">點擊或滑動開啟書籍 ➔</div>
             </div>
-            <p class="text-[17px] md:text-lg leading-loose text-[#423521] text-justify px-2 font-light">
-                福壽螺，外來之物，引埤塘之劫。碎巧克力如沃土，粉色卵塊現原形，實為生態警世之作。
-            </p>
-            <div class="text-xs text-[#a69e8b] mt-2">— 頁 壹 —</div>
-        </div>
-    </div>
-    
-    <!-- 頁面 2 -->
-    <div class="slide">
-        <div class="page">
-            <div class="book-spine"></div>
-            <div class="text-xs text-[#8e836d] tracking-widest uppercase mb-1">卷二・椒鹽水蠆</div>
-            <h1 class="title">椒鹽酥炸水蠆</h1>
-            <div class="img-box">
-                <img src="2.png" alt="" onerror="handleImageError(this, '酥炸水蠆')">
+            <!-- 序言 (背面) -->
+            <div class="back">
+                <div class="spine-shadow-right"></div>
+                <div class="text-xs text-[#8e836d] tracking-widest mb-1">【 序言・埤塘之生 】</div>
+                <h2 class="title">自序</h2>
+                <div class="my-4 text-sm leading-relaxed text-[#423521] space-y-4 text-justify font-light px-2">
+                    <p>桃園埤塘，自清領以降，既為灌溉之源，亦為萬物生靈繁衍之所。</p>
+                    <p>然外來之物侵擾、土著生靈遭劫。今以古書誌為載體，誌福壽螺、水蠆、萍蓬草及龍蝨之屬，冀望觀者能於古雅幻夢中，深思人與大地共生之法。</p>
+                </div>
+                <div class="text-xs text-[#a69e8b] mt-auto">— 序 壹 —</div>
             </div>
-            <p class="text-[17px] md:text-lg leading-loose text-[#423521] text-justify px-2 font-light">
-                蜻蜓之幼體，潛伏水中。經高溫油炸，盡顯其靈動生命之轉化。
-            </p>
-            <div class="text-xs text-[#a69e8b] mt-2">— 頁 貳 —</div>
         </div>
-    </div>
-    
-    <!-- 頁面 3 -->
-    <div class="slide">
-        <div class="page">
-            <div class="book-spine"></div>
-            <div class="text-xs text-[#8e836d] tracking-widest uppercase mb-1">卷三・萍蓬草慕斯</div>
-            <h1 class="title">琥珀萍蓬草苞慕斯</h1>
-            <div class="img-box">
-                <img src="3.png" alt="" onerror="handleImageError(this, '萍蓬草苞慕斯')">
+
+        <!-- 第二張紙：田園幻夢 & 椒鹽水蠆 -->
+        <div class="paper" id="p2" style="z-index: 3;">
+            <!-- 田園幻夢 (正面) -->
+            <div class="front">
+                <div class="spine-shadow-left"></div>
+                <div class="text-xs text-[#8e836d] tracking-widest mb-1">【 卷一・田園幻夢 】</div>
+                <h2 class="title">田園幻夢</h2>
+                <div class="img-box">
+                    <img src="1.png" alt="" onerror="handleImageError(this, '田園幻夢')">
+                </div>
+                <p class="text-[15px] leading-relaxed text-[#423521] text-justify px-2 font-light">
+                    福壽螺，外來之物，引埤塘之劫。碎巧克力如沃土，粉色卵塊現原形，實為生態警世之作。
+                </p>
+                <div class="text-xs text-[#a69e8b] mt-2">— 頁 壹 —</div>
             </div>
-            <p class="text-[17px] md:text-lg leading-loose text-[#423521] text-justify px-2 font-light">
-                淤泥深處，慕斯如土。點綴未開之花苞，見原生植物不屈之姿。
-            </p>
-            <div class="text-xs text-[#a69e8b] mt-2">— 頁 參 —</div>
-        </div>
-    </div>
-    
-    <!-- 頁面 4 -->
-    <div class="slide">
-        <div class="page">
-            <div class="book-spine"></div>
-            <div class="text-xs text-[#8e836d] tracking-widest uppercase mb-1">卷四・爆炒龍蝨</div>
-            <h1 class="title">爆炒龍蝨</h1>
-            <div class="img-box">
-                <img src="4.png" alt="" onerror="handleImageError(this, '爆炒龍蝨')">
+            <!-- 椒鹽水蠆 (背面) -->
+            <div class="back">
+                <div class="spine-shadow-right"></div>
+                <div class="text-xs text-[#8e836d] tracking-widest mb-1">【 卷二・椒鹽水蠆 】</div>
+                <h2 class="title">椒鹽酥炸水蠆</h2>
+                <div class="img-box">
+                    <img src="2.png" alt="" onerror="handleImageError(this, '酥炸水蠆')">
+                </div>
+                <p class="text-[15px] leading-relaxed text-[#423521] text-justify px-2 font-light">
+                    蜻蜓之幼體，潛伏水中。經高溫油炸，盡顯其靈動生命之轉化。
+                </p>
+                <div class="text-xs text-[#a69e8b] mt-2">— 頁 貳 —</div>
             </div>
-            <p class="text-[17px] md:text-lg leading-loose text-[#423521] text-justify px-2 font-light">
-                水中潛者，龍蝨之屬。爆炒以存其鮮，此乃水域清澈與否之明鏡。
-            </p>
-            <div class="text-xs text-[#a69e8b] mt-2">— 頁 肆 —</div>
         </div>
+
+        <!-- 第三張紙：萍蓬草 & 龍蝨 -->
+        <div class="paper" id="p3" style="z-index: 2;">
+            <!-- 萍蓬草慕斯 (正面) -->
+            <div class="front">
+                <div class="spine-shadow-left"></div>
+                <div class="text-xs text-[#8e836d] tracking-widest mb-1">【 卷三・萍蓬草慕斯 】</div>
+                <h2 class="title">琥珀萍蓬草苞慕斯</h2>
+                <div class="img-box">
+                    <img src="3.png" alt="" onerror="handleImageError(this, '萍蓬草苞慕斯')">
+                </div>
+                <p class="text-[15px] leading-relaxed text-[#423521] text-justify px-2 font-light">
+                    淤泥深處，慕斯如土。點綴未開之花苞，見原生植物不屈之姿。
+                </p>
+                <div class="text-xs text-[#a69e8b] mt-2">— 頁 參 —</div>
+            </div>
+            <!-- 爆炒龍蝨 (背面) -->
+            <div class="back">
+                <div class="spine-shadow-right"></div>
+                <div class="text-xs text-[#8e836d] tracking-widest mb-1">【 卷四・爆炒龍蝨 】</div>
+                <h2 class="title">爆炒龍蝨</h2>
+                <div class="img-box">
+                    <img src="4.png" alt="" onerror="handleImageError(this, '爆炒龍蝨')">
+                </div>
+                <p class="text-[15px] leading-relaxed text-[#423521] text-justify px-2 font-light">
+                    水中潛者，龍蝨之屬。爆炒以存其鮮，此乃水域清澈與否之明鏡。
+                </p>
+                <div class="text-xs text-[#a69e8b] mt-2">— 頁 肆 —</div>
+            </div>
+        </div>
+
+        <!-- 第四張紙：後記 & 封底 -->
+        <div class="paper" id="p4" style="z-index: 1;">
+            <!-- 跋/後記 (正面) -->
+            <div class="front">
+                <div class="spine-shadow-left"></div>
+                <div class="text-xs text-[#8e836d] tracking-widest mb-1">【 跋・生態省思 】</div>
+                <h2 class="title">跋</h2>
+                <div class="my-4 text-sm leading-relaxed text-[#423521] space-y-4 text-justify font-light px-2">
+                    <p>誌終。埤塘雖小，乾坤極大。</p>
+                    <p>物競天擇，本為自然。然人為引進之物，往往打破天地千百年來之平衡。福壽螺與原生萍蓬草之消長、水蠆與龍蝨等水棲昆蟲之棲地喪失，皆在昭示保護生態之迫切。</p>
+                    <p class="text-right text-xs mt-6 text-[#8e836d]">桃園埤塘生態保育小組 謹記</p>
+                </div>
+                <div class="text-xs text-[#a69e8b] mt-auto">— 終 頁 —</div>
+            </div>
+            <!-- 封底 (背面) -->
+            <div class="back cover-bg text-[#fdfaf6]">
+                <div class="binding-line" style="left: auto; right: 20px;"></div>
+                <!-- 線裝結點模擬 -->
+                <div class="binding-knot" style="left: auto; right: 15px; top: 50px;"></div>
+                <div class="binding-knot" style="left: auto; right: 15px; bottom: 50px;"></div>
+
+                <div class="flex flex-col items-center justify-center h-full z-10 text-center">
+                    <div class="w-16 h-16 border border-[#d4af37] rounded-full flex items-center justify-center mb-4">
+                        <span class="text-[#d4af37] text-xs">埤塘</span>
+                    </div>
+                    <h3 class="text-lg font-serif text-[#f7e4bd] tracking-widest">埤塘生態古書誌</h3>
+                    <p class="text-[10px] text-[#b89728] mt-2 tracking-widest">版權所有・翻印必究</p>
+                </div>
+                <div class="text-xs text-[#d4af37] tracking-widest z-10">➔ 點擊回到封面</div>
+            </div>
+        </div>
+
     </div>
 </div>
 
-<!-- 底部導覽頁碼 -->
-<div class="fixed bottom-6 left-1/2 transform -translate-x-1/2 flex items-center z-40">
-    <div class="dot active" onclick="goToPage(0)"></div>
-    <div class="dot" onclick="goToPage(1)"></div>
-    <div class="dot" onclick="goToPage(2)"></div>
-    <div class="dot" onclick="goToPage(3)"></div>
+<!-- 底部導覽進度條 -->
+<div class="fixed bottom-6 left-1/2 transform -translate-x-1/2 flex items-center bg-[#2c2416]/10 px-4 py-2 rounded-full backdrop-blur-sm z-40">
+    <div class="text-xs text-[#4a3e2e] mr-3 font-serif" id="page-indicator">封面 / 序言</div>
+    <div class="flex">
+        <div class="dot active" onclick="goToPage(0)"></div>
+        <div class="dot" onclick="goToPage(1)"></div>
+        <div class="dot" onclick="goToPage(2)"></div>
+        <div class="dot" onclick="goToPage(3)"></div>
+        <div class="dot" onclick="goToPage(4)"></div>
+    </div>
 </div>
+
+<style>
+    /* 圓點指示器 */
+    .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #b8b1a0;
+        margin: 0 5px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .dot.active {
+        background: #4a3e2e;
+        transform: scale(1.4);
+    }
+</style>
 
 <script>
-    let pos = 0;
-    const totalPages = 4;
-    const slider = document.getElementById('slider');
+    // 狀態設定
+    let currentLocation = 0; // 當前翻到第幾張紙後面 (0 為封面，1 為翻開第一張，以此類推)
+    const maxLocation = 4;   // 總共有 4 張紙 (封面+3張內頁/封底)
+    
+    const book = document.getElementById('book');
+    const papers = [
+        document.getElementById('p1'),
+        document.getElementById('p2'),
+        document.getElementById('p3'),
+        document.getElementById('p4')
+    ];
     const dots = document.querySelectorAll('.dot');
+    const pageIndicator = document.getElementById('page-indicator');
 
-    // 圖片載入錯誤時的優雅退場機制（產生帶有古風氛圍的文字佔位符圖）
+    const pageNames = [
+        "封面 / 序言",
+        "田園幻夢 / 椒鹽水蠆",
+        "萍蓬草慕斯 / 爆炒龍蝨",
+        "生態後記 / 封底",
+        "封底"
+    ];
+
+    // 處理圖片載入錯誤時的古風佔位符
     function handleImageError(imgElement, titleText) {
-        imgElement.onerror = null; // 防止無限迴圈
+        imgElement.onerror = null; 
         const parent = imgElement.parentElement;
         parent.innerHTML = `
             <div class="flex flex-col items-center justify-center text-center p-4 h-full w-full bg-gradient-to-br from-[#eae5da] to-[#dfdacd]">
-                <svg class="w-12 h-12 text-[#9e937d] mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-10 h-10 text-[#9e937d] mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                 </svg>
-                <span class="text-[#7a6f5a] font-serif text-sm tracking-widest">[ 繪卷：${titleText} ]</span>
-                <span class="text-[10px] text-[#a69e8b] mt-1 font-sans">無圖檔或載入中</span>
+                <span class="text-[#7a6f5a] font-serif text-xs tracking-widest">[ 繪卷：${titleText} ]</span>
+                <span class="text-[9px] text-[#a69e8b] mt-1">請放置 ${titleText === '田園幻夢' ? '1.png' : titleText === '酥炸水蠆' ? '2.png' : titleText === '萍蓬草苞慕斯' ? '3.png' : '4.png'} 於同目錄</span>
             </div>
         `;
     }
 
-    // 更新滑動與點選狀態
-    function updateSlider() {
-        slider.style.transform = `translateX(-${pos * 100}vw)`;
-        
-        // 更新小圓點狀態
+    // 3D 翻書邏輯控制
+    function openBook() {
+        // 當書打開時，整體向右平移一半寬度，使展開的左右對頁呈現在螢幕中央
+        book.style.transform = "translateX(50%)";
+    }
+
+    function closeBook(isAtBeginning) {
+        if(isAtBeginning) {
+            // 在封面時，書本中心向右移，使封面置中
+            book.style.transform = "translateX(0px)";
+        } else {
+            // 在封底時，書本中心向左移，使封底置中
+            book.style.transform = "translateX(100%)";
+        }
+    }
+
+    function updatePagesState() {
+        // 1. 更新每張紙的旋轉狀態與 z-index 層級
+        for (let i = 0; i < papers.length; i++) {
+            if (i < currentLocation) {
+                // 已翻過去的頁面
+                papers[i].classList.add('flipped');
+                papers[i].style.transform = "rotateY(-180deg)";
+                papers[i].style.zIndex = i + 1; // 翻過去的疊在最底層
+                papers[i].classList.remove('active-clickable');
+            } else {
+                // 尚未翻過去的頁面
+                papers[i].classList.remove('flipped');
+                papers[i].style.transform = "rotateY(0deg)";
+                papers[i].style.zIndex = papers.length - i; // 未翻的頂層 z-index 較高
+                papers[i].classList.remove('active-clickable');
+            }
+        }
+
+        // 2. 設置當前「可點擊翻頁」的頁面，確保只有最上層頁面可以滑鼠互動
+        if (currentLocation === 0) {
+            papers[0].classList.add('active-clickable');
+        } else if (currentLocation === maxLocation) {
+            papers[papers.length - 1].classList.add('active-clickable');
+        } else {
+            // 中間狀態：上一張和下一張都可以點擊翻頁
+            papers[currentLocation - 1].classList.add('active-clickable');
+            papers[currentLocation].classList.add('active-clickable');
+        }
+
+        // 3. 更新書本的平移位置（左右展開對中）
+        if (currentLocation === 0) {
+            closeBook(true);
+        } else if (currentLocation === maxLocation) {
+            closeBook(false);
+        } else {
+            openBook();
+        }
+
+        // 4. 更新進度指示器
+        pageIndicator.innerText = pageNames[Math.min(currentLocation, maxLocation - 1)];
         dots.forEach((dot, index) => {
-            if (index === pos) {
+            if (index === currentLocation) {
                 dot.classList.add('active');
             } else {
                 dot.classList.remove('active');
@@ -311,33 +496,58 @@
         });
     }
 
-    // 前往特定頁面
-    function goToPage(pageIndex) {
-        pos = pageIndex;
-        updateSlider();
-    }
-
-    // 下一頁
+    // 翻頁動作
     function nextPage() {
-        pos = (pos + 1) % totalPages;
-        updateSlider();
+        if (currentLocation < maxLocation) {
+            currentLocation++;
+            updatePagesState();
+        } else {
+            // 已經到封底，再點擊則回到封面
+            currentLocation = 0;
+            updatePagesState();
+        }
     }
 
-    // 上一頁
     function prevPage() {
-        pos = (pos - 1 + totalPages) % totalPages;
-        updateSlider();
+        if (currentLocation > 0) {
+            currentLocation--;
+            updatePagesState();
+        }
     }
 
-    // 綁定按鈕點擊事件
+    function goToPage(index) {
+        currentLocation = index;
+        updatePagesState();
+    }
+
+    // 按鈕與點擊綁定
     document.getElementById('nextBtn').addEventListener('click', (e) => {
         e.stopPropagation();
         nextPage();
     });
-
     document.getElementById('prevBtn').addEventListener('click', (e) => {
         e.stopPropagation();
         prevPage();
+    });
+
+    // 點擊書本本身也能翻頁 (點擊右半邊往後，點擊左半邊往前)
+    book.addEventListener('click', (e) => {
+        const bookRect = book.getBoundingClientRect();
+        const clickX = e.clientX - bookRect.left;
+        
+        if (currentLocation === 0) {
+            nextPage(); // 封面直接往後翻
+        } else if (currentLocation === maxLocation) {
+            currentLocation = 0; // 封底直接回封面
+            updatePagesState();
+        } else {
+            // 中間對頁：點擊右側翻下一頁，點擊左側退回上一頁
+            if (clickX > bookRect.width) {
+                nextPage();
+            } else {
+                prevPage();
+            }
+        }
     });
 
     // 鍵盤左右方向鍵支援
@@ -349,7 +559,100 @@
         }
     });
 
-    // --- 觸控滑動手勢支援 (Mobile Swipe Support) ---
+    // --- 自動響應式比例縮放 (Responsive Auto-Scale) ---
+    function resizeBook() {
+        const viewport = document.querySelector('.book-viewport');
+        const viewWidth = window.innerWidth;
+        const viewHeight = window.innerHeight;
+        
+        // 滿版打開時的書本邊界尺寸 (寬度 420*2 = 840px, 高度 580px, 再預留安全邊界)
+        const targetWidth = 940; 
+        const targetHeight = 660;
+
+        let scale = 1;
+        
+        // 計算寬高收縮比例，並取其極小值以確保書本不超出螢幕
+        const scaleX = viewWidth / targetWidth;
+        const scaleY = viewHeight / targetHeight;
+        scale = Math.min(scaleX, scaleY);
+
+        // 如果是超窄螢幕（如手機），再做安全微調
+        if (viewWidth < 480) {
+            scale = scale * 0.95;
+        }
+
+        // 應用縮放比例到 3D 舞台
+        book.style.transform += ` scale(${scale})`;
+        
+        // 重新套用當前頁面的 3D 平移狀態
+        updatePagesState();
+        
+        // 為了避免 scale() 蓋掉 translate，我們把 scale 寫入 css property 或在 JS 中整合
+        applyTransform(scale);
+    }
+
+    function applyTransform(scale) {
+        let translateX = "0px";
+        if (currentLocation === 0) {
+            translateX = "0px";
+        } else if (currentLocation === maxLocation) {
+            translateX = "420px"; // 等於一張紙的寬度，平移封底
+        } else {
+            translateX = "210px"; // 平移一半寬度，置中左右對頁
+        }
+        
+        book.style.transform = `scale(${scale}) translateX(${translateX})`;
+    }
+
+    // 重寫 updatePagesState 中的平移邏輯以整合比例縮放
+    const originalUpdatePagesState = updatePagesState;
+    updatePagesState = function() {
+        // 先執行原有的旋轉與 z-index 排序
+        for (let i = 0; i < papers.length; i++) {
+            if (i < currentLocation) {
+                papers[i].classList.add('flipped');
+                papers[i].style.transform = "rotateY(-180deg)";
+                papers[i].style.zIndex = i + 1;
+                papers[i].classList.remove('active-clickable');
+            } else {
+                papers[i].classList.remove('flipped');
+                papers[i].style.transform = "rotateY(0deg)";
+                papers[i].style.zIndex = papers.length - i;
+                papers[i].classList.remove('active-clickable');
+            }
+        }
+
+        if (currentLocation === 0) {
+            papers[0].classList.add('active-clickable');
+        } else if (currentLocation === maxLocation) {
+            papers[papers.length - 1].classList.add('active-clickable');
+        } else {
+            papers[currentLocation - 1].classList.add('active-clickable');
+            papers[currentLocation].classList.add('active-clickable');
+        }
+
+        // 透過 resizeBook 重新計算縮放並套用平移
+        const viewport = document.querySelector('.book-viewport');
+        const scaleX = window.innerWidth / 940;
+        const scaleY = window.innerHeight / 660;
+        const scale = Math.min(scaleX, scaleY);
+        applyTransform(scale);
+
+        // 更新 UI
+        pageIndicator.innerText = pageNames[Math.min(currentLocation, maxLocation - 1)];
+        dots.forEach((dot, index) => {
+            if (index === currentLocation) {
+                dot.classList.add('active');
+            } else {
+                dot.classList.remove('active');
+            }
+        });
+    };
+
+    window.addEventListener('resize', updatePagesState);
+    window.addEventListener('load', updatePagesState);
+
+    // --- 手機觸控滑動手勢支援 (Swipe Support) ---
     let touchStartX = 0;
     let touchEndX = 0;
 
@@ -363,15 +666,16 @@
     }, { passive: true });
 
     function handleSwipe() {
-        const threshold = 50; // 滑動靈敏度距離 (px)
+        const threshold = 50; 
         if (touchStartX - touchEndX > threshold) {
-            // 向左滑，看下一張
-            nextPage();
+            nextPage(); // 向左滑，翻下一頁
         } else if (touchEndX - touchStartX > threshold) {
-            // 向右滑，看上一張
-            prevPage();
+            prevPage(); // 向右滑，退回上一頁
         }
     }
+
+    // 初始載入
+    updatePagesState();
 </script>
 
 </body>
