@@ -650,29 +650,6 @@
 
     window.addEventListener('resize', updatePagesState);
     window.addEventListener('load', updatePagesState);
-
-    // --- 手機觸控滑動手勢支援 (Swipe Support) ---
-    let touchStartX = 0;
-    let touchEndX = 0;
-
-    document.addEventListener('touchstart', (e) => {
-        touchStartX = e.changedTouches[0].screenX;
-    }, { passive: true });
-
-    document.addEventListener('touchend', (e) => {
-        touchEndX = e.changedTouches[0].screenX;
-        handleSwipe();
-    }, { passive: true });
-
-    function handleSwipe() {
-        const threshold = 50; 
-        if (touchStartX - touchEndX > threshold) {
-            nextPage(); // 向左滑，翻下一頁
-        } else if (touchEndX - touchStartX > threshold) {
-            prevPage(); // 向右滑，退回上一頁
-        }
-    }
-
     // 初始載入
     updatePagesState();
 </script>
